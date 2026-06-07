@@ -1,0 +1,4 @@
+@import "tailwindcss";
+
+* { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+html { scroll-behavior: smooth; }
