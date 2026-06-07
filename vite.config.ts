@@ -5,4 +5,3 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
 })
-// deploy-trigger: 1780801790
