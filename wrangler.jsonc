@@ -13,5 +13,18 @@
   },
   "compatibility_flags": [
     "nodejs_compat"
-  ]
+  ],
+  // Set these via `npx wrangler secret put`:
+  //   STRIPE_SECRET_KEY
+  //   STRIPE_WEBHOOK_SECRET
+  //   KEYGEN_ACCOUNT_ID
+  //   KEYGEN_ADMIN_TOKEN
+  "vars": {
+    "STRIPE_PRICE_ID_SINGLE": "price_1TfuJrA9STL8XQ42tn7u9ZCL",
+    "STRIPE_PRICE_ID_MULTI": "price_1TfuLDA9STL8XQ42aYRtBmgP",
+    "STRIPE_PRICE_ID_ENTERPRISE": "price_1TfuMaA9STL8XQ42paZF1hwZ",
+    "KEYGEN_POLICY_ID_SINGLE": "6ad3d790-a2f5-4a80-8864-27554672636d",
+    "KEYGEN_POLICY_ID_MULTI": "1da4ab2d-fad2-4bb4-8c53-0a0100c877a7",
+    "KEYGEN_POLICY_ID_ENTERPRISE": "615a499a-4591-4da6-9c8c-2dc760ee971a"
+  }
 }

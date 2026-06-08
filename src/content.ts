@@ -69,6 +69,7 @@ export const PLANS = [
     subtitle: 'One warehouse',
     price: 500,
     featured: false,
+    priceId: 'price_1TfuJrA9STL8XQ42tn7u9ZCL',
     features: [
       'Up to 10 workers',
       'Web dashboard + mobile app',
@@ -83,6 +84,7 @@ export const PLANS = [
     subtitle: 'Up to 3 warehouses',
     price: 1500,
     featured: true,
+    priceId: 'price_1TfuLDA9STL8XQ42aYRtBmgP',
     features: [
       'Up to 50 workers',
       '3 warehouse licenses',
@@ -98,6 +100,7 @@ export const PLANS = [
     subtitle: 'Unlimited warehouses',
     price: 5000,
     featured: false,
+    priceId: 'price_1TfuMaA9STL8XQ42paZF1hwZ',
     features: [
       'Unlimited workers',
       'Unlimited warehouse licenses',
