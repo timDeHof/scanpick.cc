@@ -82,8 +82,8 @@ async function handleStripeWebhook(
 
     const stripe = new Stripe(env.STRIPE_SECRET_KEY);
     const body = await request.text();
-    const event = stripe.webhooks.constructEvent(body, signature, env.STRIPE_WEBHOOK_SECRET);
 
+    const event = await stripe.webhooks.constructEventAsync(body, signature, env.STRIPE_WEBHOOK_SECRET);
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object;
       // Fire-and-forget the Keygen license creation so Stripe gets a quick 200
@@ -96,6 +96,7 @@ async function handleStripeWebhook(
   } catch (error) {
     // Signature verification or other errors
     const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`Webhook error: ${message}`);
     return new Response(JSON.stringify({ error: message }), {
       status: 400,
       headers: { 'Content-Type': 'application/json' },
@@ -117,7 +118,6 @@ async function createKeygenLicense(
 
   const policyId = resolvePolicyId(planName, env);
   if (!policyId) {
-    console.error(`Unknown planName "${planName}" — cannot associate with a Keygen policy`);
     return;
   }
 
