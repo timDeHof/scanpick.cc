@@ -276,7 +276,7 @@ Support: support@scanpick.cc`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'ScanPick <deliveries@scanpick.cc>',
+        from: 'ScanPick <noreply@deliveries.scanpick.cc>',
         to: [to],
         subject: `Your ScanPick ${planName} license is ready`,
         html,
