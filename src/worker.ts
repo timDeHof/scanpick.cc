@@ -171,10 +171,130 @@ async function createKeygenLicense(
   if (!response.ok) {
     const errorBody = await response.text();
     console.error(`Keygen license creation failed: ${response.status} ${errorBody}`);
-  } else {
-    const successBody = await response.json();
-    const licenseId = successBody?.data?.id || 'unknown';
-    console.log(`Keygen: License created successfully! id=${licenseId}`);
+    return;
+  }
+
+  const successBody = await response.json() as any;
+  const licenseId = successBody?.data?.id || 'unknown';
+  const licenseKey = successBody?.data?.attributes?.key || '';
+  const expiry = successBody?.data?.attributes?.expiry || '';
+
+  console.log(`Keygen: License created successfully! id=${licenseId}, key=${licenseKey}`);
+
+  // Fire-and-forget email delivery — log failures but don't throw
+  await sendLicenseEmail(env, {
+    to: customerEmail,
+    planName,
+    licenseKey,
+    licenseId,
+    expiry,
+  });
+}
+
+interface LicenseEmailParams {
+  to: string;
+  planName: string;
+  licenseKey: string;
+  licenseId: string;
+  expiry: string;
+}
+
+async function sendLicenseEmail(env: Env, params: LicenseEmailParams): Promise<void> {
+  const { to, planName, licenseKey, licenseId, expiry } = params;
+
+  if (!to) {
+    console.warn('Email: No customer email address available — skipping send');
+    return;
+  }
+
+  const expiryDate = new Date(expiry);
+  const expiryFormatted = expiryDate.toLocaleDateString('en-US', {
+    year: 'numeric', month: 'long', day: 'numeric',
+  });
+
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#f4f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+  <table style="max-width:560px;margin:40px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08)">
+    <tr>
+      <td style="padding:32px 40px 0">
+        <h1 style="font-size:24px;font-weight:700;color:#1a1a2e;margin:0">Your ScanPick license is ready</h1>
+        <p style="font-size:15px;color:#475569;line-height:1.6;margin:12px 0 0">Thanks for purchasing <strong>${planName}</strong>! Your license key is below.</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:24px 40px">
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:20px;text-align:center">
+          <p style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 8px">License Key</p>
+          <code style="font-size:18px;font-weight:600;color:#2563eb;word-break:break-all;font-family:'SF Mono',Consolas,monospace">${licenseKey}</code>
+          <p style="font-size:13px;color:#64748b;margin:12px 0 0">Expires: ${expiryFormatted}</p>
+        </div>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:0 40px">
+        <h2 style="font-size:16px;font-weight:600;color:#1a1a2e;margin:0 0 12px">Activation</h2>
+        <p style="font-size:14px;color:#475569;line-height:1.6;margin:0">
+          Log in to your <a href="https://scanpick.cc" style="color:#2563eb;text-decoration:underline">ScanPick Dashboard</a>,
+          go to <strong>License Settings</strong>, and paste the license key from above to activate.
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:24px 40px 32px;border-top:1px solid #e2e8f0">
+        <p style="font-size:13px;color:#94a3b8;margin:0 0 4px">
+          Need help? Contact <a href="mailto:support@scanpick.cc" style="color:#2563eb;text-decoration:none">support@scanpick.cc</a>
+        </p>
+        <p style="font-size:13px;color:#94a3b8;margin:0">
+          ScanPick &mdash; Warehouse wave-picking simplified.
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+  const text = `Your ScanPick license is ready
+===========================
+Plan: ${planName}
+License Key: ${licenseKey}
+Expires: ${expiryFormatted}
+
+Activation:
+  Log in to your ScanPick Dashboard (https://scanpick.cc),
+  go to License Settings, and paste your license key to activate.
+
+Dashboard: https://scanpick.cc
+Support: support@scanpick.cc`;
+
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'ScanPick <deliveries@scanpick.cc>',
+        to: [to],
+        subject: `Your ScanPick ${planName} license is ready`,
+        html,
+        text,
+      }),
+    });
+
+    if (res.ok) {
+      const data = await res.json() as { id: string };
+      console.log(`Email: Sent to ${to} — id=${data.id}`);
+    } else {
+      const errBody = await res.text();
+      console.error(`Email: Resend returned ${res.status} — ${errBody}`);
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`Email: Failed to send to ${to} — ${message}`);
+    // Do not rethrow — failing to send email should not block the webhook
   }
 }
 
