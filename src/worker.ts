@@ -19,9 +19,15 @@ async function handleCreateCheckoutSession(
 
     const stripe = new Stripe(env.STRIPE_SECRET_KEY);
 
-    // Derive base URL from the request origin for local dev support.
-    // Falls back to production URL when Origin header is absent (e.g., production proxy).
-    const origin = request.headers.get('Origin') || 'https://scanpick.cc';
+    // Derive base URL for Stripe redirect from the request origin, but only
+    // allow known origins to prevent open-redirect attacks via spoofed Origin.
+    const ALLOWED_ORIGINS = [
+      'https://scanpick.cc',
+      'http://localhost:5173',
+      'http://localhost:8787',
+    ];
+    const requestOrigin = request.headers.get('Origin') || '';
+    const origin = ALLOWED_ORIGINS.includes(requestOrigin) ? requestOrigin : 'https://scanpick.cc';
 
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
@@ -114,6 +120,11 @@ async function createKeygenLicense(
     headers: {
       Authorization: `Bearer ${env.KEYGEN_ADMIN_TOKEN}`,
       'Content-Type': 'application/vnd.api+json',
+      // Idempotency key prevents duplicate license creation on retry.
+      // session.id is a unique Stripe Checkout session ID, so even if the
+      // first POST succeeds but the response is lost, the retry with the
+      // same key will be a no-op on Keygen's side.
+      'Idempotency-Key': session.id,
     },
     body: JSON.stringify({
       data: {
