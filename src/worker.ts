@@ -279,10 +279,33 @@ async function handleVerifyLicense(request: Request, env: Env): Promise<Response
   const url = new URL(request.url);
   const sessionId = url.searchParams.get('session_id');
   const licenseId = url.searchParams.get('license_id');
+  const licenseKey = url.searchParams.get('key');
+
+  // If a raw license key is provided, validate it via Keygen's public
+  // validate-key endpoint (no admin auth needed).
+  if (licenseKey) {
+    const validateUrl = `https://api.keygen.sh/v1/accounts/${env.KEYGEN_ACCOUNT_ID}/licenses/actions/validate-key`;
+    const res = await fetch(validateUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/vnd.api+json',
+        Accept: 'application/vnd.api+json',
+      },
+      body: JSON.stringify({
+        meta: { key: licenseKey },
+      }),
+    });
+
+    const data = await res.json();
+    return new Response(JSON.stringify(data, null, 2), {
+      status: res.ok ? 200 : 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
 
   if (!sessionId && !licenseId) {
     return new Response(
-      JSON.stringify({ error: 'Provide session_id or license_id' }),
+      JSON.stringify({ error: 'Provide session_id, license_id, or key' }),
       { status: 400, headers: { 'Content-Type': 'application/json' } },
     );
   }
