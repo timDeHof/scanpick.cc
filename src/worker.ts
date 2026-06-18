@@ -181,21 +181,12 @@ async function createKeygenLicense(
 
   console.log(`Keygen: License created successfully! id=${licenseId}, key=${licenseKey}`);
 
-  // Generate an offline license token (HMAC-signed) for client-side validation
-  const offlineToken = await encodeOfflineLicenseToken(
-    licenseId,
-    policyId,
-    env.KEYGEN_ACCOUNT_ID,
-    expiry,
-    env.LICENSE_SECRET,
-  );
-  console.log(`Keygen: Offline token generated (${offlineToken.length} chars)`);
-
   // Fire-and-forget email delivery — log failures but don't throw
+  // Send the raw Keygen license key; the API validates it via online Keygen API (see ADR-007)
   await sendLicenseEmail(env, {
     to: customerEmail,
     planName,
-    licenseKey: offlineToken,
+    licenseKey,
     licenseId,
     expiry,
   });
@@ -384,47 +375,6 @@ function resolvePolicyId(planName: string, env: Env): string | null {
   }
 }
 
-/**
- * Generates an offline license token: key/base64(payload).base64(HMAC-SHA256).
- *
- * The payload mirrors the TokenPayload record in KeygenLicenseService.cs.
- * The API validates this token locally using the same LICENSE_SECRET.
- */
-async function encodeOfflineLicenseToken(
-  licenseId: string,
-  policyId: string,
-  accountId: string,
-  expiry: string,
-  secret: string,
-): Promise<string> {
-  const payload = {
-    account: { id: accountId },
-    product: null,
-    policy: { id: policyId },
-    user: null,
-    license: {
-      id: licenseId,
-      created: new Date().toISOString(),
-      expiry,
-    },
-  };
-
-  const payloadJson = JSON.stringify(payload);
-  const payloadBase64 = btoa(payloadJson);
-
-  // Compute HMAC-SHA256 over the raw JSON bytes
-  const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    'raw',
-    encoder.encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign'],
-  );
-  const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(payloadJson));
-  const signatureBase64 = btoa(
-    String.fromCharCode(...new Uint8Array(signature)),
-  );
-
-  return `key/${payloadBase64}.${signatureBase64}`;
-}
+// encodeOfflineLicenseToken removed per ADR-007:
+// License keys are sent raw (Keygen-issued) and validated
+// online by the API via Keygen's validate-key endpoint.
