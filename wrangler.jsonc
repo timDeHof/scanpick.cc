@@ -30,5 +30,18 @@
     "KEYGEN_POLICY_ID_SINGLE": "6ad3d790-a2f5-4a80-8864-27554672636d",
     "KEYGEN_POLICY_ID_MULTI": "1da4ab2d-fad2-4bb4-8c53-0a0100c877a7",
     "KEYGEN_POLICY_ID_ENTERPRISE": "615a499a-4591-4da6-9c8c-2dc760ee971a"
-  }
+  },
+  // Daily cron for renewal reminder checks (midnight UTC)
+  "triggers": {
+    "crons": ["0 0 * * *"]
+  },
+  // KV namespace for deduplicating renewal reminder emails.
+  // Create it with: npx wrangler kv namespace create RENEWAL_REMINDER_KV
+  // Then paste the resulting id below, or set via --kv-id.
+  "kv_namespaces": [
+    {
+      "binding": "RENEWAL_REMINDER_KV",
+      "id": ""
+    }
+  ]
 }

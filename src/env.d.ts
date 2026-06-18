@@ -22,4 +22,6 @@ interface Env {
   KEYGEN_POLICY_ID_SINGLE: string;
   KEYGEN_POLICY_ID_MULTI: string;
   KEYGEN_POLICY_ID_ENTERPRISE: string;
+  // KV namespace for deduplicating renewal reminder emails
+  RENEWAL_REMINDER_KV: KVNamespace;
 }
