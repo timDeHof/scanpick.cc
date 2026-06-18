@@ -19,6 +19,10 @@ async function handleCreateCheckoutSession(
 
     const stripe = new Stripe(env.STRIPE_SECRET_KEY);
 
+    // Derive base URL from the request origin for local dev support.
+    // Falls back to production URL when Origin header is absent (e.g., production proxy).
+    const origin = request.headers.get('Origin') || 'https://scanpick.cc';
+
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       line_items: [
@@ -27,8 +31,8 @@ async function handleCreateCheckoutSession(
           quantity: 1,
         },
       ],
-      success_url: 'https://scanpick.cc/thank-you?session_id={CHECKOUT_SESSION_ID}',
-      cancel_url: 'https://scanpick.cc/#pricing',
+      success_url: `${origin}/thank-you?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/#pricing`,
       metadata: {
         planName,
       },
@@ -105,55 +109,76 @@ async function createKeygenLicense(
     return;
   }
 
-  console.log(`Keygen: POSTing to accounts/${env.KEYGEN_ACCOUNT_ID}/licenses`);
-
-  const response = await fetch(
-    `https://api.keygen.sh/v1/accounts/${env.KEYGEN_ACCOUNT_ID}/licenses`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${env.KEYGEN_ADMIN_TOKEN}`,
-        'Content-Type': 'application/vnd.api+json',
-      },
-      body: JSON.stringify({
-        data: {
-          type: 'licenses',
-          attributes: {
-            name: `${planName} — ${customerEmail}`,
-            expiry: expiresAt.toISOString(),
-            metadata: {
-              planName,
-              customerEmail,
-              stripeSessionId: session.id,
-              amountTotal: session.amount_total ?? null,
-              currency: session.currency ?? null,
-            },
-          },
-          relationships: {
-            policy: {
-              data: {
-                type: 'policies',
-                id: policyId,
-              },
-            },
+  const licenseRequestBody = () => ({
+    method: 'POST' as const,
+    headers: {
+      Authorization: `Bearer ${env.KEYGEN_ADMIN_TOKEN}`,
+      'Content-Type': 'application/vnd.api+json',
+    },
+    body: JSON.stringify({
+      data: {
+        type: 'licenses',
+        attributes: {
+          name: `${planName} — ${customerEmail}`,
+          expiry: expiresAt.toISOString(),
+          metadata: {
+            planName,
+            customerEmail,
+            stripeSessionId: session.id,
+            amountTotal: session.amount_total ?? null,
+            currency: session.currency ?? null,
           },
         },
-      }),
-    },
-  );
+        relationships: {
+          policy: {
+            data: { type: 'policies', id: policyId },
+          },
+        },
+      },
+    }),
+  });
 
-  console.log(`Keygen: Response status=${response.status}`);
+  const licenseUrl = `https://api.keygen.sh/v1/accounts/${env.KEYGEN_ACCOUNT_ID}/licenses`;
 
-  if (!response.ok) {
-    const errorBody = await response.text();
-    console.error(`Keygen license creation failed: ${response.status} ${errorBody}`);
+  // Retry up to 3 times on transient failures (rate limits, network glitches)
+  let attempts = 0;
+  const maxAttempts = 3;
+  let successBody: any;
+  let lastError: string | undefined;
+
+  while (attempts < maxAttempts) {
+    const fetchResponse = await fetch(licenseUrl, licenseRequestBody());
+    attempts++;
+
+    if (fetchResponse.ok) {
+      successBody = await fetchResponse.json() as any;
+      break;
+    }
+
+    lastError = await fetchResponse.text();
+    console.error(`Keygen license creation attempt ${attempts}/${maxAttempts} failed: ${fetchResponse.status} ${lastError}`);
+
+    if (attempts < maxAttempts) {
+      // Exponential backoff: 1s, 2s
+      await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempts - 1)));
+    }
+  }
+
+  if (!successBody) {
+    console.error(`Keygen license creation failed after ${maxAttempts} attempts: ${lastError}`);
+    // Payment captured by Stripe but license creation failed — alert via log for now.
+    // TODO: enqueue to dead-letter queue for manual reconciliation, or send admin alert.
     return;
   }
 
-  const successBody = await response.json() as any;
-  const licenseId = successBody?.data?.id || 'unknown';
+  const licenseId = successBody?.data?.id || '';
   const licenseKey = successBody?.data?.attributes?.key || '';
   const expiry = successBody?.data?.attributes?.expiry || '';
+
+  if (!licenseKey || !licenseId) {
+    console.error(`Keygen license created but returned empty key or id — id=${licenseId} key=${licenseKey}`);
+    return;
+  }
 
   console.log(`Keygen: License created successfully! id=${licenseId}, key=${licenseKey}`);
 
@@ -294,12 +319,7 @@ async function handleVerifyLicense(request: Request, env: Env): Promise<Response
       body: JSON.stringify({
         meta: { key: licenseKey },
       }),
-  const data = await res.json();
-  const isValid = !data.errors;
-  return new Response(JSON.stringify(data, null, 2), {
-    status: isValid ? 200 : 400,
-    headers: { 'Content-Type': 'application/json' },
-  });
+    });
 
     const data = await res.json();
     return new Response(JSON.stringify(data, null, 2), {
