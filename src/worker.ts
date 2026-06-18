@@ -294,7 +294,12 @@ async function handleVerifyLicense(request: Request, env: Env): Promise<Response
       body: JSON.stringify({
         meta: { key: licenseKey },
       }),
-    });
+  const data = await res.json();
+  const isValid = !data.errors;
+  return new Response(JSON.stringify(data, null, 2), {
+    status: isValid ? 200 : 400,
+    headers: { 'Content-Type': 'application/json' },
+  });
 
     const data = await res.json();
     return new Response(JSON.stringify(data, null, 2), {
