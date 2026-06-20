@@ -10,6 +10,7 @@
     "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
+    "@clerk/react": "^6.10.4",
     "framer-motion": "^12.9.2",
     "motion-dom": "^12.9.1",
     "react": "^19.1.0",

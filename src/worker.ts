@@ -5,14 +5,15 @@ async function handleCreateCheckoutSession(
   env: Env,
 ): Promise<Response> {
   try {
-    const { priceId, planName } = await request.json() as {
+    const { priceId, planName, userId } = await request.json() as {
       priceId: string;
       planName: string;
+      userId: string;
     };
 
-    if (!priceId || !planName) {
+    if (!priceId || !planName || !userId) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields: priceId, planName' }),
+        JSON.stringify({ error: 'Missing required fields: priceId, planName, userId' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } },
       );
     }
@@ -37,6 +38,7 @@ async function handleCreateCheckoutSession(
           quantity: 1,
         },
       ],
+      client_reference_id: userId,
       success_url: `${origin}/thank-you?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/#pricing`,
       metadata: {
@@ -101,6 +103,7 @@ async function createKeygenLicense(
   const customerEmail =
     session.customer_email || session.customer_details?.email || '';
   const planName = session.metadata?.planName || 'Unknown';
+  const clerkUserId = session.client_reference_id || '';
 
   console.log(`Keygen: Starting license creation for planName="${planName}", email="${customerEmail}"`);
 
@@ -135,6 +138,7 @@ async function createKeygenLicense(
           metadata: {
             planName,
             customerEmail,
+            clerkUserId,
             stripeSessionId: session.id,
             amountTotal: session.amount_total ?? null,
             currency: session.currency ?? null,
@@ -410,6 +414,57 @@ function resolvePolicyId(planName: string, env: Env): string | null {
   }
 }
 
+async function handleListLicenses(request: Request, env: Env): Promise<Response> {
+  const url = new URL(request.url);
+  const userId = url.searchParams.get('userId');
+
+  if (!userId) {
+    return new Response(
+      JSON.stringify({ error: 'Missing userId query param' }),
+      { status: 400, headers: { 'Content-Type': 'application/json' } },
+    );
+  }
+
+  // Fetch all non-expired licenses from Keygen (up to 100)
+  const listUrl = `https://api.keygen.sh/v1/accounts/${env.KEYGEN_ACCOUNT_ID}/licenses?limit=100`;
+
+  const response = await fetch(listUrl, {
+    headers: {
+      Authorization: `Bearer ${env.KEYGEN_ADMIN_TOKEN}`,
+      Accept: 'application/vnd.api+json',
+    },
+  });
+
+  if (!response.ok) {
+    return new Response(
+      JSON.stringify({ error: 'Failed to fetch licenses' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } },
+    );
+  }
+
+  const data = await response.json() as { data?: any[] };
+  const allLicenses = data?.data || [];
+
+  // Filter to only licenses belonging to this Clerk user
+  const userLicenses = allLicenses.filter((lic: any) =>
+    lic.attributes?.metadata?.clerkUserId === userId,
+  );
+
+  // Map to safe response shape (exclude admin-only fields)
+  const mapped = userLicenses.map((lic: any) => ({
+    id: lic.id,
+    key: lic.attributes?.key || '',
+    name: lic.attributes?.name || '',
+    expiry: lic.attributes?.expiry || '',
+    status: lic.attributes?.status || '',
+    planName: lic.attributes?.metadata?.planName || '',
+  }));
+
+  return new Response(JSON.stringify(mapped, null, 2), {
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
 // ── Scheduled (Cron) ──────────────────────────────────────────────────────────
 // Daily cron trigger for renewal reminder emails at 30/14/7 days before expiry.
 // The cron schedule "0 0 * * *" runs daily at midnight UTC (configured in wrangler.jsonc).
@@ -430,6 +485,10 @@ export default {
 
     if (url.pathname.startsWith('/api/verify-license') && request.method === 'GET') {
       return handleVerifyLicense(request, env);
+    }
+
+    if (url.pathname.startsWith('/api/licenses') && request.method === 'GET') {
+      return handleListLicenses(request, env);
     }
 
     // All other paths: serve the SPA static assets

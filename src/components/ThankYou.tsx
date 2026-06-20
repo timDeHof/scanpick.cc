@@ -1,11 +1,24 @@
+import { useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { useSearchParams, Link } from 'react-router-dom'
+import { useSearchParams, Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '@clerk/react'
 import Navigation from './Navigation'
 import Footer from './Footer'
 
 export default function ThankYou() {
   const [searchParams] = useSearchParams()
   const sessionId = searchParams.get('session_id')
+  const { isSignedIn } = useAuth()
+  const navigate = useNavigate()
+
+  // Signed-in users land here after Stripe redirect — send them to /account
+  // where license keys appear after the webhook fires.
+  useEffect(() => {
+    if (isSignedIn && sessionId) {
+      const timer = setTimeout(() => navigate('/account', { replace: true }), 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [isSignedIn, sessionId, navigate])
 
   return (
     <div className="bg-white text-gray-900 antialiased min-h-screen flex flex-col">
@@ -55,8 +68,11 @@ export default function ThankYou() {
                 </span>
                 <span>
                   <strong className="text-gray-900">Check your email</strong> —
-                  Your license key and download instructions are on their way to
-                  the inbox you used during checkout.
+                  Your license key is on its way to your inbox. If you created an
+                  account, it will also appear in your{' '}
+                  <Link to="/account" className="text-blue-600 hover:text-blue-700 underline">
+                    account dashboard
+                  </Link>.
                 </span>
               </li>
               <li className="flex items-start gap-3">
@@ -65,8 +81,12 @@ export default function ThankYou() {
                 </span>
                 <span>
                   <strong className="text-gray-900">Download &amp; run</strong> —
-                  Download the ScanPick binary for your platform, place your
-                  license file in the same directory, and start the server.
+                  Download the ScanPick binary from your{' '}
+                  <Link to="/account" className="text-blue-600 hover:text-blue-700 underline">
+                    account dashboard
+                  </Link>
+                  , place your license key in the same directory, and start the
+                  server.
                 </span>
               </li>
               <li className="flex items-start gap-3">
@@ -89,24 +109,22 @@ export default function ThankYou() {
             </p>
           )}
 
+          {/* Dashboard link */}
+          <Link
+            to="/account"
+            className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+            </svg>
+            Go to Account Dashboard
+          </Link>
+
           {/* Back link */}
           <Link
             to="/"
-            className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+            className="mt-4 block text-sm text-gray-400 hover:text-gray-600 transition-colors"
           >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
             Back to ScanPick
           </Link>
         </motion.div>

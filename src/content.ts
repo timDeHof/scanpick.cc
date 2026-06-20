@@ -112,6 +112,37 @@ export const PLANS = [
   },
 ] as const
 
+// Current release version — bump when publishing a new release
+// Build with: ./scripts/build-release.sh --tag && git push origin v{VERSION}
+export const LATEST_VERSION = '0.1.0'
+
+export const DOWNLOADS = [
+  {
+    platform: 'Linux (x64)',
+    rid: 'linux-x64',
+    ext: 'tar.gz',
+    icon: 'server',
+  },
+  {
+    platform: 'macOS (x64)',
+    rid: 'osx-x64',
+    ext: 'tar.gz',
+    icon: 'desktop',
+  },
+  {
+    platform: 'macOS (ARM64)',
+    rid: 'osx-arm64',
+    ext: 'tar.gz',
+    icon: 'desktop',
+  },
+  {
+    platform: 'Windows (x64)',
+    rid: 'win-x64',
+    ext: 'zip',
+    icon: 'desktop',
+  },
+] as const
+
 export const FAQS = [
   {
     q: 'Do I need a cloud subscription?',

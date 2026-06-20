@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
+import { useAuth } from '@clerk/react'
+import { useNavigate } from 'react-router-dom'
 import { SITE, FEATURES, STEPS, PLANS, FAQS } from '../content'
 import Navigation from '../components/Navigation'
 import Footer from '../components/Footer'
@@ -22,15 +24,22 @@ function CheckIcon() {
 function CheckoutButton({ plan }: { plan: typeof PLANS[number] }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
+  const { isSignedIn, userId } = useAuth()
+  const navigate = useNavigate()
 
   const handleClick = async () => {
+    if (!isSignedIn || !userId) {
+      navigate('/sign-in?redirect=/#pricing')
+      return
+    }
+
     setLoading(true)
     setError(false)
     try {
       const res = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ priceId: plan.priceId, planName: plan.name }),
+        body: JSON.stringify({ priceId: plan.priceId, planName: plan.name, userId }),
       })
       const data = await res.json()
       if (data.url) {
@@ -45,7 +54,13 @@ function CheckoutButton({ plan }: { plan: typeof PLANS[number] }) {
     }
   }
 
-  const buttonText = loading ? 'Redirecting…' : error ? 'Error — try again' : plan.cta
+  const buttonText = loading
+    ? 'Redirecting…'
+    : error
+      ? 'Error — try again'
+      : isSignedIn
+        ? plan.cta
+        : 'Sign in to purchase'
 
   return (
     <button
