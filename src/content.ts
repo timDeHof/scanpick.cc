@@ -69,6 +69,7 @@ export const PLANS = [
     subtitle: 'One warehouse',
     price: 500,
     featured: false,
+    priceId: 'price_1TfuJrA9STL8XQ42tn7u9ZCL',
     features: [
       'Up to 10 workers',
       'Web dashboard + mobile app',
@@ -83,6 +84,7 @@ export const PLANS = [
     subtitle: 'Up to 3 warehouses',
     price: 1500,
     featured: true,
+    priceId: 'price_1TfuLDA9STL8XQ42aYRtBmgP',
     features: [
       'Up to 50 workers',
       '3 warehouse licenses',
@@ -98,6 +100,7 @@ export const PLANS = [
     subtitle: 'Unlimited warehouses',
     price: 5000,
     featured: false,
+    priceId: 'price_1TfuMaA9STL8XQ42paZF1hwZ',
     features: [
       'Unlimited workers',
       'Unlimited warehouse licenses',
@@ -106,6 +109,37 @@ export const PLANS = [
     ],
     cta: 'Contact Us',
     href: 'mailto:sales@scanpick.com',
+  },
+] as const
+
+// Current release version — bump when publishing a new release
+// Build with: ./scripts/build-release.sh --tag && git push origin v{VERSION}
+export const LATEST_VERSION = '0.1.0'
+
+export const DOWNLOADS = [
+  {
+    platform: 'Linux (x64)',
+    rid: 'linux-x64',
+    ext: 'tar.gz',
+    icon: 'server',
+  },
+  {
+    platform: 'macOS (x64)',
+    rid: 'osx-x64',
+    ext: 'tar.gz',
+    icon: 'desktop',
+  },
+  {
+    platform: 'macOS (ARM64)',
+    rid: 'osx-arm64',
+    ext: 'tar.gz',
+    icon: 'desktop',
+  },
+  {
+    platform: 'Windows (x64)',
+    rid: 'win-x64',
+    ext: 'zip',
+    icon: 'desktop',
   },
 ] as const
 

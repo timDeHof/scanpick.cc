@@ -1,4 +1,7 @@
+import { useState } from 'react'
 import { motion } from 'framer-motion'
+import { useAuth } from '@clerk/react'
+import { useNavigate } from 'react-router-dom'
 import { SITE, FEATURES, STEPS, PLANS, FAQS } from '../content'
 import Navigation from '../components/Navigation'
 import Footer from '../components/Footer'
@@ -15,6 +18,64 @@ function CheckIcon() {
     <svg className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
+  )
+}
+
+function CheckoutButton({ plan }: { plan: typeof PLANS[number] }) {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(false)
+  const { isSignedIn, userId } = useAuth()
+  const navigate = useNavigate()
+
+  const handleClick = async () => {
+    if (!isSignedIn || !userId) {
+      navigate('/sign-in?redirect=/#pricing')
+      return
+    }
+
+    setLoading(true)
+    setError(false)
+    try {
+      const res = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ priceId: plan.priceId, planName: plan.name, userId }),
+      })
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        setError(true)
+      }
+    } catch {
+      setError(true)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const buttonText = loading
+    ? 'Redirecting…'
+    : error
+      ? 'Error — try again'
+      : isSignedIn
+        ? plan.cta
+        : 'Sign in to purchase'
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={loading}
+      className={`mt-8 block w-full px-6 py-3 text-sm font-semibold rounded-lg text-center transition-colors cursor-pointer ${
+        loading
+          ? 'bg-blue-400 text-white cursor-not-allowed'
+          : plan.featured
+            ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 hover:bg-blue-700'
+            : 'bg-blue-600 text-white hover:bg-blue-700'
+      }`}
+    >
+      {buttonText}
+    </button>
   )
 }
 
@@ -865,11 +926,7 @@ export default function VariantD() {
                     </li>
                   ))}
                 </ul>
-                <a href={p.href} className={`mt-8 block w-full px-6 py-3 text-sm font-semibold rounded-lg text-center transition-colors ${
-                  p.featured ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 hover:bg-blue-700' : 'bg-blue-600 text-white hover:bg-blue-700'
-                }`}>
-                  {p.cta}
-                </a>
+                <CheckoutButton plan={p} />
               </motion.div>
             ))}
           </div>

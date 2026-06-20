@@ -4,13 +4,19 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:wrangler": "wrangler dev --port 8787",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
+    "@clerk/react": "^6.10.4",
     "framer-motion": "^12.9.2",
+    "motion-dom": "^12.9.1",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^7.17.0",
+    "stripe": "^22.2.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.6",
@@ -21,5 +27,8 @@
     "typescript": "~5.8.3",
     "vite": "^6.3.5",
     "wrangler": "^4.98.0"
+  },
+  "optionalDependencies": {
+    "@cloudflare/workerd-darwin-64": "^1.20260617.1"
   }
 }
