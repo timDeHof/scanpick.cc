@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { Show, UserButton } from '@clerk/react'
+import { useUser, UserButton } from '@clerk/react'
 import { Link } from 'react-router-dom'
 import { SITE } from '../content'
 
@@ -45,6 +45,13 @@ const styles: Record<Style, {
 
 export default function Navigation({ style = 'light' }: { style?: Style }) {
   const s = styles[style]
+  // Use useUser to determine auth state. When Clerk hasn't loaded yet
+  // (publishable key missing or still loading), isLoaded is false and
+  // isSignedIn is undefined — we treat that as signed-out so the
+  // marketing nav links are always visible by default.
+  const { isLoaded, isSignedIn } = useUser()
+  const isAuthenticated = isLoaded && isSignedIn
+
   return (
     <motion.nav
       initial={{ y: -20, opacity: 0 }}
@@ -61,63 +68,66 @@ export default function Navigation({ style = 'light' }: { style?: Style }) {
             <span className={`text-xl font-bold ${s.text}`}>{SITE.name}</span>
           </Link>
           <div className="flex items-center gap-4">
-            <Show when="signed-in">
-              {/* Docs link */}
-              <a
-                href="https://docs.scanpick.cc"
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`hidden md:inline-flex text-sm font-medium ${s.link} transition-colors`}
-              >
-                Docs
-              </a>
-              {/* Account link */}
-              <Link
-                to="/account"
-                className={`hidden md:inline-flex text-sm font-medium ${s.link} transition-colors`}
-              >
-                Account
-              </Link>
-              {/* Clerk user button */}
-              <UserButton
-                afterSignOutUrl="/"
-                appearance={{
-                  elements: {
-                    userButtonAvatarBox: 'w-8 h-8',
-                  },
-                }}
-              />
-            </Show>
-            <Show when="signed-out">
-              {style !== 'minimal' && (
-                <div className={`hidden md:flex items-center gap-8 text-sm font-medium ${s.link}`}>
-                  <a href="/#features" className="transition-colors">Features</a>
-                  <a href="/#how-it-works" className="transition-colors">How It Works</a>
-                  <a href="/#pricing" className="transition-colors">Pricing</a>
-                  <a href="/#faq" className="transition-colors">FAQ</a>
-                  <a
-                    href="https://docs.scanpick.cc"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="transition-colors"
-                  >
-                    Docs
-                  </a>
-                </div>
-              )}
-              <Link
-                to="/sign-in"
-                className={`hidden md:inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${s.ctaOutline}`}
-              >
-                Sign In
-              </Link>
-              <a
-                href="/#pricing"
-                className={`inline-flex items-center px-5 py-2.5 text-sm font-semibold rounded-lg transition-colors ${s.cta}`}
-              >
-                Buy Now
-              </a>
-            </Show>
+            {isAuthenticated ? (
+              <>
+                {/* Docs link */}
+                <a
+                  href="https://docs.scanpick.cc"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`hidden md:inline-flex text-sm font-medium ${s.link} transition-colors`}
+                >
+                  Docs
+                </a>
+                {/* Account link */}
+                <Link
+                  to="/account"
+                  className={`hidden md:inline-flex text-sm font-medium ${s.link} transition-colors`}
+                >
+                  Account
+                </Link>
+                {/* Clerk user button */}
+                <UserButton
+                  afterSignOutUrl="/"
+                  appearance={{
+                    elements: {
+                      userButtonAvatarBox: 'w-8 h-8',
+                    },
+                  }}
+                />
+              </>
+            ) : (
+              <>
+                {style !== 'minimal' && (
+                  <div className={`hidden md:flex items-center gap-8 text-sm font-medium ${s.link}`}>
+                    <a href="/#features" className="transition-colors">Features</a>
+                    <a href="/#how-it-works" className="transition-colors">How It Works</a>
+                    <a href="/#pricing" className="transition-colors">Pricing</a>
+                    <a href="/#faq" className="transition-colors">FAQ</a>
+                    <a
+                      href="https://docs.scanpick.cc"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="transition-colors"
+                    >
+                      Docs
+                    </a>
+                  </div>
+                )}
+                <Link
+                  to="/sign-in"
+                  className={`hidden md:inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${s.ctaOutline}`}
+                >
+                  Sign In
+                </Link>
+                <a
+                  href="/#pricing"
+                  className={`inline-flex items-center px-5 py-2.5 text-sm font-semibold rounded-lg transition-colors ${s.cta}`}
+                >
+                  Buy Now
+                </a>
+              </>
+            )}
           </div>
         </div>
       </div>
