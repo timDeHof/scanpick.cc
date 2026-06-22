@@ -29,7 +29,7 @@ const sections = [
   {
     heading: 'Your Rights (GDPR)',
     content:
-      'If you are in the European Union, you have the right to:\n\n- **Access** — request a copy of the personal data we hold about you\n- **Rectification** — correct inaccurate data\n- **Erasure** — request deletion of your personal data\n- **Portability** — export your data in a machine-readable format\n- **Objection** — object to processing of your data\n\nTo exercise any of these rights, contact us at support@scanpick.cc.',
+      'If you are in the European Union, you have the right to:\n\n- **Access** — request a copy of the personal data we hold about you\n- **Rectification** — correct inaccurate data\n- **Erasure** — request deletion of your personal data\n- **Portability** — export your data in a machine-readable format\n- **Objection** — object to processing of your data\n\nTo exercise any of these rights, contact us at contact@scanpick.cc.',
   },
   {
     heading: 'Data Security',
@@ -49,7 +49,7 @@ const sections = [
   {
     heading: 'Contact',
     content:
-      'Privacy questions or concerns? Contact us at support@scanpick.cc.',
+      'Privacy questions or concerns? Contact us at contact@scanpick.cc.',
   },
 ]
 

@@ -98,5 +98,5 @@ This EULA constitutes the entire agreement between the parties regarding ScanPic
 
 For questions about this EULA:
 
-- Email: [support@scanpick.cc](mailto:support@scanpick.cc)
+- Email: [contact@scanpick.cc](mailto:contact@scanpick.cc)
 - GitHub: [github.com/timDeHof/scanpick](https://github.com/timDeHof/scanpick)

@@ -98,7 +98,7 @@ If you are in the European Union, you have the right to:
 - **Portability** — export your data in a machine-readable format
 - **Objection** — object to processing of your data
 
-To exercise any of these rights, contact us at [support@scanpick.cc](mailto:support@scanpick.cc).
+To exercise any of these rights, contact us at [contact@scanpick.cc](mailto:contact@scanpick.cc).
 
 ## Data Security
 
@@ -128,4 +128,4 @@ We may update this Privacy Policy. Material changes will be communicated via ema
 
 ## Contact
 
-Privacy questions or concerns? Contact us at [support@scanpick.cc](mailto:support@scanpick.cc).
+Privacy questions or concerns? Contact us at [contact@scanpick.cc](mailto:contact@scanpick.cc).

@@ -16,7 +16,13 @@ export default function Footer({ style = 'light' }: { style?: Style }) {
             <span className="text-sm font-semibold text-white">{SITE.name}</span>
           </div>
           <div className="flex items-center gap-6 text-sm">
-            <a href="mailto:hello@scanpick.com" className="hover:text-white transition-colors">Contact</a>
+            <a href="mailto:contact@scanpick.cc" className="hover:text-white transition-colors">Contact</a>
+            <span className="text-gray-600">·</span>
+            <a href="/terms" className="hover:text-white transition-colors">Terms</a>
+            <span className="text-gray-600">·</span>
+            <a href="/privacy" className="hover:text-white transition-colors">Privacy</a>
+            <span className="text-gray-600">·</span>
+            <a href="/eula" className="hover:text-white transition-colors">EULA</a>
             <span className="text-gray-600">·</span>
             <span>&copy; 2026 ScanPick. All rights reserved.</span>
           </div>

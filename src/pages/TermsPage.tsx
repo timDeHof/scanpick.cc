@@ -19,7 +19,7 @@ const sections = [
   {
     heading: '4. Payment & Renewals',
     content:
-      '**Payment**\n\nAll purchases are processed via Stripe. We accept major credit cards. Prices are listed at scanpick.cc/#pricing.\n\nPayment is due in full at the time of purchase. All prices are in USD.\n\n**Renewals**\n\nLicenses are annual and expire one year from the purchase date. We send renewal reminder emails at 30, 14, and 7 days before expiry.\n\nTo renew, visit the pricing page and complete a new purchase. After renewal, you\'ll receive a new license key with an updated expiry date.\n\nWe do not auto-charge or auto-renew. Renewals are manual.\n\n**Refunds**\n\nWe offer a **30-day money-back guarantee**. If you\'re not satisfied with ScanPick within 30 days of purchase, contact us at support@scanpick.cc for a full refund.\n\nAfter 30 days, all sales are final.',
+      '**Payment**\n\nAll purchases are processed via Stripe. We accept major credit cards. Prices are listed at scanpick.cc/#pricing.\n\nPayment is due in full at the time of purchase. All prices are in USD.\n\n**Renewals**\n\nLicenses are annual and expire one year from the purchase date. We send renewal reminder emails at 30, 14, and 7 days before expiry.\n\nTo renew, visit the pricing page and complete a new purchase. After renewal, you\'ll receive a new license key with an updated expiry date.\n\nWe do not auto-charge or auto-renew. Renewals are manual.\n\n**Refunds**\n\nWe offer a **30-day money-back guarantee**. If you\'re not satisfied with ScanPick within 30 days of purchase, contact us at contact@scanpick.cc for a full refund.\n\nAfter 30 days, all sales are final.',
   },
   {
     heading: '5. Delivery',
@@ -29,7 +29,7 @@ const sections = [
   {
     heading: '6. Support',
     content:
-      'We provide email support at support@scanpick.cc. We respond within 1-2 business days.\n\n**Support includes:**\n- Installation and configuration questions\n- Bug reports and troubleshooting\n- License key issues\n\n**Support does not include:**\n- Custom development or feature requests\n- Integration with third-party systems (beyond documented APIs)\n- On-site deployment assistance',
+      'We provide email support at contact@scanpick.cc. We respond within 1-2 business days.\n\n**Support includes:**\n- Installation and configuration questions\n- Bug reports and troubleshooting\n- License key issues\n\n**Support does not include:**\n- Custom development or feature requests\n- Integration with third-party systems (beyond documented APIs)\n- On-site deployment assistance',
   },
   {
     heading: '7. No Warranty',
@@ -59,7 +59,7 @@ const sections = [
   {
     heading: '12. Contact',
     content:
-      'Questions or concerns? Contact us at:\n\n- Email: support@scanpick.cc\n- GitHub: github.com/timDeHof/scanpick',
+      'Questions or concerns? Contact us at:\n\n- Email: contact@scanpick.cc\n- GitHub: github.com/timDeHof/scanpick',
   },
 ]
 

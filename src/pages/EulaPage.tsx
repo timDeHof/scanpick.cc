@@ -59,7 +59,7 @@ const sections = [
   {
     heading: '12. Contact',
     content:
-      'For questions about this EULA:\n\n- Email: support@scanpick.cc\n- GitHub: github.com/timDeHof/scanpick',
+      'For questions about this EULA:\n\n- Email: contact@scanpick.cc\n- GitHub: github.com/timDeHof/scanpick',
   },
 ]
 

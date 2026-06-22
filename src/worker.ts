@@ -261,7 +261,7 @@ async function sendLicenseEmail(env: Env, params: LicenseEmailParams): Promise<v
     <tr>
       <td style="padding:24px 40px 32px;border-top:1px solid #e2e8f0">
         <p style="font-size:13px;color:#94a3b8;margin:0 0 4px">
-          Need help? Contact <a href="mailto:support@scanpick.cc" style="color:#2563eb;text-decoration:none">support@scanpick.cc</a>
+          Need help? Contact <a href="mailto:contact@scanpick.cc" style="color:#2563eb;text-decoration:none">contact@scanpick.cc</a>
         </p>
         <p style="font-size:13px;color:#94a3b8;margin:0">
           ScanPick &mdash; Warehouse wave-picking simplified.
@@ -283,7 +283,7 @@ Activation:
   go to License Settings, and paste your license key to activate.
 
 Dashboard: https://scanpick.cc
-Support: support@scanpick.cc`;
+Support: contact@scanpick.cc`;
 
   try {
     const res = await fetch('https://api.resend.com/emails', {
@@ -702,7 +702,7 @@ async function sendRenewalReminderEmail(
     <tr>
       <td style="padding:24px 40px 32px;border-top:1px solid #e2e8f0">
         <p style="font-size:13px;color:#94a3b8;margin:0 0 4px">
-          Need help? Contact <a href="mailto:support@scanpick.cc" style="color:#2563eb;text-decoration:none">support@scanpick.cc</a>
+          Need help? Contact <a href="mailto:contact@scanpick.cc" style="color:#2563eb;text-decoration:none">contact@scanpick.cc</a>
         </p>
         <p style="font-size:13px;color:#94a3b8;margin:0">
           ScanPick &mdash; Warehouse wave-picking simplified.
@@ -725,7 +725,7 @@ the product will stop working and your team will lose access. Renew now to keep 
 
 Renew here: https://scanpick.cc/#pricing
 
-Need help? Contact support@scanpick.cc`;
+Need help? Contact contact@scanpick.cc`;
 
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',

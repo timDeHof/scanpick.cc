@@ -47,7 +47,7 @@ We do not auto-charge or auto-renew. Renewals are manual.
 
 ### Refunds
 
-We offer a **30-day money-back guarantee**. If you're not satisfied with ScanPick within 30 days of purchase, contact us at [support@scanpick.cc](mailto:support@scanpick.cc) for a full refund.
+We offer a **30-day money-back guarantee**. If you're not satisfied with ScanPick within 30 days of purchase, contact us at [contact@scanpick.cc](mailto:contact@scanpick.cc) for a full refund.
 
 After 30 days, all sales are final.
 
@@ -64,7 +64,7 @@ Installation instructions are at [docs.scanpick.cc](https://docs.scanpick.cc).
 
 ## 6. Support
 
-We provide email support at [support@scanpick.cc](mailto:support@scanpick.cc). We respond within 1-2 business days.
+We provide email support at [contact@scanpick.cc](mailto:contact@scanpick.cc). We respond within 1-2 business days.
 
 Support includes:
 
@@ -113,5 +113,5 @@ These Terms are governed by the laws of the State of Oregon, USA, without regard
 
 Questions or concerns? Contact us at:
 
-- Email: [support@scanpick.cc](mailto:support@scanpick.cc)
+- Email: [contact@scanpick.cc](mailto:contact@scanpick.cc)
 - GitHub: [github.com/timDeHof/scanpick](https://github.com/timDeHof/scanpick)
