@@ -24,13 +24,19 @@
 	//
 	// LICENSE_SECRET was removed per ADR-007 — license keys validated
 	// via Keygen's public validate-key endpoint (no shared secret).
+	// Live-mode Stripe Price IDs (created via scanpick-awi).
+	// Naming: _MONTHLY or _ANNUAL suffix for billing interval.
 	"vars": {
-		"STRIPE_PRICE_ID_SINGLE": "price_1TfuJrA9STL8XQ42tn7u9ZCL",
-		"STRIPE_PRICE_ID_MULTI": "price_1TfuLDA9STL8XQ42aYRtBmgP",
-		"STRIPE_PRICE_ID_ENTERPRISE": "price_1TfuMaA9STL8XQ42paZF1hwZ",
+		"STRIPE_PRICE_ID_SINGLE_MONTHLY": "price_1Tmk5uAD9cXz3uO4O889drlF",
+		"STRIPE_PRICE_ID_SINGLE_ANNUAL": "price_1Tmk5yAD9cXz3uO4QzCHMjoQ",
+		"STRIPE_PRICE_ID_MULTI_MONTHLY": "price_1Tmk66AD9cXz3uO4z3bZIRXV",
+		"STRIPE_PRICE_ID_MULTI_ANNUAL": "price_1Tmk66AD9cXz3uO4ucehfhB2",
+		"STRIPE_PRICE_ID_ENTERPRISE_MONTHLY": "price_1Tmk6FAD9cXz3uO4G6HVDg6G",
+		"STRIPE_PRICE_ID_ENTERPRISE_ANNUAL": "price_1Tmk6FAD9cXz3uO4DakSdRK9",
 		"KEYGEN_POLICY_ID_SINGLE": "6ad3d790-a2f5-4a80-8864-27554672636d",
 		"KEYGEN_POLICY_ID_MULTI": "1da4ab2d-fad2-4bb4-8c53-0a0100c877a7",
-		"KEYGEN_POLICY_ID_ENTERPRISE": "615a499a-4591-4da6-9c8c-2dc760ee971a"
+		"KEYGEN_POLICY_ID_ENTERPRISE": "615a499a-4591-4da6-9c8c-2dc760ee971a",
+		"KEYGEN_POLICY_ID_TRIAL": "32bac931-bda8-4e4d-b6fc-76cb72ff555d"
 	},
 	// Daily cron for renewal reminder checks (midnight UTC)
 	"triggers": {

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useAuth } from '@clerk/react'
 import { useNavigate } from 'react-router-dom'
+import type { BillingInterval } from '../content'
 import { SITE, FEATURES, STEPS, PLANS, FAQS } from '../content'
 import Navigation from '../components/Navigation'
 import Footer from '../components/Footer'
@@ -21,11 +22,16 @@ function CheckIcon() {
   )
 }
 
-function CheckoutButton({ plan }: { plan: typeof PLANS[number] }) {
+function CheckoutButton({ plan, billingInterval }: { plan: typeof PLANS[number], billingInterval: BillingInterval }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
   const { isSignedIn, userId } = useAuth()
   const navigate = useNavigate()
+
+  const priceId = billingInterval === 'month' ? plan.priceIdMonthly : plan.priceIdAnnual
+  const price = billingInterval === 'month' ? plan.priceMonthly : plan.priceAnnual
+  const suffix = billingInterval === 'month' ? '/mo' : '/yr'
+  const cta = `Buy — $${price.toLocaleString()}${suffix}`
 
   const handleClick = async () => {
     if (!isSignedIn || !userId) {
@@ -39,7 +45,7 @@ function CheckoutButton({ plan }: { plan: typeof PLANS[number] }) {
       const res = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ priceId: plan.priceId, planName: plan.name, userId }),
+        body: JSON.stringify({ priceId, planName: plan.name, userId }),
       })
       const data = await res.json()
       if (data.url) {
@@ -59,7 +65,7 @@ function CheckoutButton({ plan }: { plan: typeof PLANS[number] }) {
     : error
       ? 'Error — try again'
       : isSignedIn
-        ? plan.cta
+        ? cta
         : 'Sign in to purchase'
 
   return (
@@ -76,6 +82,59 @@ function CheckoutButton({ plan }: { plan: typeof PLANS[number] }) {
     >
       {buttonText}
     </button>
+  )
+}
+
+function TrialButton({ plan, onSuccess }: { plan: typeof PLANS[number], onSuccess: () => void }) {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const { isSignedIn, userId } = useAuth()
+  const navigate = useNavigate()
+
+  const handleTrial = async () => {
+    if (!isSignedIn || !userId) {
+      navigate('/sign-in?redirect=/#pricing')
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/create-trial-license', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planName: plan.name, userId }),
+      })
+      const data = await res.json()
+      if (data.licenseKey) {
+        // Navigate to account page where the trial license will be visible
+        navigate('/account')
+      } else {
+        setError(data.error || 'Failed to start trial')
+      }
+    } catch {
+      setError('Network error — try again')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const buttonText = loading
+    ? 'Starting…'
+    : error
+      ? error
+      : 'Start Free Trial'
+
+  return (
+    <div className="mt-3">
+      <button
+        onClick={handleTrial}
+        disabled={loading}
+        className="w-full px-6 py-2 text-sm font-medium rounded-lg text-center transition-colors cursor-pointer border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+      >
+        {buttonText}
+      </button>
+    </div>
   )
 }
 
@@ -771,7 +830,35 @@ function FeatureSvg({ title }: { title: string }) {
   }
 }
 
+function BillingToggle({ billingInterval, onChange }: { billingInterval: BillingInterval, onChange: (v: BillingInterval) => void }) {
+  return (
+    <div className="inline-flex items-center bg-gray-100 rounded-full p-1 gap-0">
+      <button
+        onClick={() => onChange('month')}
+        className={`px-4 py-1.5 text-sm font-semibold rounded-full transition-colors cursor-pointer ${
+          billingInterval === 'month'
+            ? 'bg-white text-gray-900 shadow-sm'
+            : 'text-gray-500 hover:text-gray-700'
+        }`}
+      >
+        Monthly
+      </button>
+      <button
+        onClick={() => onChange('year')}
+        className={`px-4 py-1.5 text-sm font-semibold rounded-full transition-colors cursor-pointer ${
+          billingInterval === 'year'
+            ? 'bg-white text-gray-900 shadow-sm'
+            : 'text-gray-500 hover:text-gray-700'
+        }`}
+      >
+        Annual <span className="text-emerald-600 font-bold">Save 2 months</span>
+      </button>
+    </div>
+  )
+}
+
 export default function VariantD() {
+  const [billingInterval, setBillingInterval] = useState<BillingInterval>('year')
   return (
     <div className="bg-white text-gray-900 antialiased">
       <Navigation style="light" />
@@ -894,41 +981,60 @@ export default function VariantD() {
       {/* ── Pricing ── */}
       <section id="pricing" className="py-24 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div className="text-center mb-16" {...fadeUp}>
+          <motion.div className="text-center mb-10" {...fadeUp}>
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">Pricing</h2>
-            <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">Annual license. Includes updates and email support. We send a reminder before expiry — no auto-billing.</p>
+            <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
+              Choose monthly or annual billing. Annual saves you 2 months compared to monthly.
+              We send a reminder before expiry — no auto-billing.
+            </p>
           </motion.div>
+
+          {/* ── Billing interval toggle ── */}
+          <motion.div className="flex justify-center mb-12" {...fadeUp}>
+            <BillingToggle billingInterval={billingInterval} onChange={setBillingInterval} />
+          </motion.div>
+
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto items-start">
-            {PLANS.map((p, i) => (
-              <motion.div
-                key={p.name}
-                {...fadeUp}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
-                className={`bg-white rounded-2xl border p-8 transition-all duration-200 ${
-                  p.featured ? 'border-blue-500 border-2 shadow-xl scale-[1.02] relative' : 'border-gray-200 hover:-translate-y-1 hover:shadow-lg'
-                }`}
-              >
-                {p.featured && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs font-semibold px-4 py-1 rounded-full">
-                    Most Popular
+            {PLANS.map((p, i) => {
+              const price = billingInterval === 'month' ? p.priceMonthly : p.priceAnnual
+              const suffix = billingInterval === 'month' ? '/mo' : '/yr'
+              return (
+                <motion.div
+                  key={p.name}
+                  {...fadeUp}
+                  transition={{ duration: 0.5, delay: i * 0.1 }}
+                  className={`bg-white rounded-2xl border p-8 transition-all duration-200 ${
+                    p.featured ? 'border-blue-500 border-2 shadow-xl scale-[1.02] relative' : 'border-gray-200 hover:-translate-y-1 hover:shadow-lg'
+                  }`}
+                >
+                  {p.featured && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs font-semibold px-4 py-1 rounded-full">
+                      Most Popular
+                    </div>
+                  )}
+                  <h3 className="text-lg font-semibold text-gray-900">{p.name}</h3>
+                  <p className="mt-1 text-sm text-gray-500">{p.subtitle}</p>
+                  <div className="mt-6">
+                    <span className="text-4xl font-extrabold text-gray-900">${price.toLocaleString()}</span>
+                    <span className="text-gray-500 text-sm">{suffix}</span>
                   </div>
-                )}
-                <h3 className="text-lg font-semibold text-gray-900">{p.name}</h3>
-                <p className="mt-1 text-sm text-gray-500">{p.subtitle}</p>
-                <div className="mt-6">
-                  <span className="text-4xl font-extrabold text-gray-900">${p.price.toLocaleString()}</span>
-                  <span className="text-gray-500 text-sm">/year</span>
-                </div>
-                <ul className="mt-6 space-y-3 text-sm text-gray-600">
-                  {p.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2">
-                      <CheckIcon /> {f}
-                    </li>
-                  ))}
-                </ul>
-                <CheckoutButton plan={p} />
-              </motion.div>
-            ))}
+                  {billingInterval === 'year' && (
+                    <p className="mt-1 text-xs text-emerald-600 font-medium">
+                      ${(p.priceMonthly * 12 - p.priceAnnual).toLocaleString()} off vs monthly
+                    </p>
+                  )}
+                  <ul className="mt-6 space-y-3 text-sm text-gray-600">
+                    {p.features.map((f) => (
+                      <li key={f} className="flex items-start gap-2">
+                        <CheckIcon /> {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <CheckoutButton plan={p} billingInterval={billingInterval} />
+                  <TrialButton plan={p} onSuccess={() => {}} />
+                </motion.div>
+              )
+            })}
           </div>
         </div>
       </section>

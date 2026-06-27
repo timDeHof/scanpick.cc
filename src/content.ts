@@ -5,7 +5,7 @@ export const SITE = {
   headline: 'Wave Picking for Small Warehouses',
   subhead:
     'Download the server binary, open the dashboard on any tablet in the warehouse, install the mobile app on your workers\' phones. Everything stays on your network.',
-  cta: 'Buy — From $500/yr',
+  cta: 'Buy — From $50/mo',
   ctaSecondary: 'See Features',
 } as const
 
@@ -63,28 +63,33 @@ export const STEPS = [
   },
 ] as const
 
+export type BillingInterval = 'month' | 'year'
+
 export const PLANS = [
   {
     name: 'Single Site',
     subtitle: 'One warehouse',
-    price: 500,
+    priceMonthly: 50,
+    priceAnnual: 500,
     featured: false,
-    priceId: 'price_1TfuJrA9STL8XQ42tn7u9ZCL',
+    priceIdMonthly: 'price_1Tmk5uAD9cXz3uO4O889drlF',
+    priceIdAnnual: 'price_1Tmk5yAD9cXz3uO4QzCHMjoQ',
     features: [
       'Up to 10 workers',
       'Web dashboard + mobile app',
       'Offline scan queuing',
       'Email support',
     ],
-    cta: 'Buy — $500',
     href: '#',
   },
   {
     name: 'Multi Site',
     subtitle: 'Up to 3 warehouses',
-    price: 1500,
+    priceMonthly: 150,
+    priceAnnual: 1500,
     featured: true,
-    priceId: 'price_1TfuLDA9STL8XQ42aYRtBmgP',
+    priceIdMonthly: 'price_1Tmk66AD9cXz3uO4z3bZIRXV',
+    priceIdAnnual: 'price_1Tmk66AD9cXz3uO4ucehfhB2',
     features: [
       'Up to 50 workers',
       '3 warehouse licenses',
@@ -92,22 +97,22 @@ export const PLANS = [
       'Offline scan queuing',
       'Priority email support',
     ],
-    cta: 'Buy — $1,500',
     href: '#',
   },
   {
     name: 'Enterprise',
     subtitle: 'Unlimited warehouses',
-    price: 5000,
+    priceMonthly: 500,
+    priceAnnual: 5000,
     featured: false,
-    priceId: 'price_1TfuMaA9STL8XQ42paZF1hwZ',
+    priceIdMonthly: 'price_1Tmk6FAD9cXz3uO4G6HVDg6G',
+    priceIdAnnual: 'price_1Tmk6FAD9cXz3uO4DakSdRK9',
     features: [
       'Unlimited workers',
       'Unlimited warehouse licenses',
       'Self-hosted PostgreSQL (BYO)',
       'VIP support (email + Slack)',
     ],
-    cta: 'Contact Us',
     href: 'mailto:sales@scanpick.com',
   },
 ] as const

@@ -58,6 +58,154 @@ async function handleCreateCheckoutSession(
   }
 }
 
+/**
+ * POST /api/create-trial-license
+ * Creates a 14-day free trial license for the given user and plan.
+ * Returns { licenseKey, expiry, licenseId } on success.
+ */
+async function handleCreateTrialLicense(
+  request: Request,
+  env: Env,
+): Promise<Response> {
+  try {
+    const { planName, userId } = await request.json() as {
+      planName: string;
+      userId: string;
+    };
+
+    if (!planName || !userId) {
+      return new Response(
+        JSON.stringify({ error: 'Missing required fields: planName, userId' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+
+    // Check if user already has a trial license
+    const existingTrial = await findExistingTrial(userId, env);
+    if (existingTrial) {
+      // Return the existing trial rather than creating a duplicate
+      return new Response(JSON.stringify({
+        licenseKey: existingTrial.attributes.key,
+        expiry: existingTrial.attributes.expiry,
+        licenseId: existingTrial.id,
+        planName: existingTrial.attributes.metadata?.planName || planName,
+        isTrial: true,
+      }), {
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 14-day licence from now
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 14);
+
+    const licenseUrl = `https://api.keygen.sh/v1/accounts/${env.KEYGEN_ACCOUNT_ID}/licenses`;
+
+    const fetchResponse = await fetch(licenseUrl, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${env.KEYGEN_ADMIN_TOKEN}`,
+        'Content-Type': 'application/vnd.api+json',
+        'Idempotency-Key': `trial-${userId}-${planName}`,
+      },
+      body: JSON.stringify({
+        data: {
+          type: 'licenses',
+          attributes: {
+            name: `Trial — ${planName} — ${userId.slice(0, 8)}`,
+            expiry: expiresAt.toISOString(),
+            metadata: {
+              planName,
+              clerkUserId: userId,
+              isTrial: 'true',
+              trialStartedAt: new Date().toISOString(),
+            },
+          },
+          relationships: {
+            policy: {
+              data: { type: 'policies', id: env.KEYGEN_POLICY_ID_TRIAL },
+            },
+          },
+        },
+      }),
+    });
+
+    if (!fetchResponse.ok) {
+      const errorText = await fetchResponse.text();
+      console.error(`Trial license creation failed: ${fetchResponse.status} ${errorText}`);
+      return new Response(
+        JSON.stringify({ error: 'Failed to create trial license' }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+
+    const successBody = await fetchResponse.json() as any;
+    const licenseKey = successBody?.data?.attributes?.key || '';
+    const licenseId = successBody?.data?.id || '';
+    const expiry = successBody?.data?.attributes?.expiry || '';
+
+    if (!licenseKey || !licenseId) {
+      console.error(`Trial license created but empty key/id — id=${licenseId} key=${licenseKey}`);
+      return new Response(
+        JSON.stringify({ error: 'Trial license created but response incomplete' }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+
+    console.log(`Trial license created! id=${licenseId}, key=${licenseKey}, expires=${expiry}`);
+
+    return new Response(JSON.stringify({
+      licenseKey,
+      expiry,
+      licenseId,
+      planName,
+      isTrial: true,
+    }), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return new Response(JSON.stringify({ error: message }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+/**
+ * Searches Keygen for an existing trial license belonging to this user.
+ * Returns the license data object, or null if none found.
+ */
+async function findExistingTrial(
+  clerkUserId: string,
+  env: Env,
+): Promise<{ id: string; attributes: any } | null> {
+  const listUrl = `https://api.keygen.sh/v1/accounts/${env.KEYGEN_ACCOUNT_ID}/licenses?limit=100`;
+
+  const response = await fetch(listUrl, {
+    headers: {
+      Authorization: `Bearer ${env.KEYGEN_ADMIN_TOKEN}`,
+      Accept: 'application/vnd.api+json',
+    },
+  });
+
+  if (!response.ok) {
+    console.error(`Failed to list licenses for trial check: ${response.status}`);
+    return null;
+  }
+
+  const data = await response.json() as { data?: any[] };
+  const allLicenses = data?.data || [];
+
+  // Find a license matching this userId AND flagged as trial
+  const trial = allLicenses.find((lic: any) =>
+    lic.attributes?.metadata?.clerkUserId === clerkUserId &&
+    lic.attributes?.metadata?.isTrial === 'true',
+  );
+
+  return trial || null;
+}
+
 async function handleStripeWebhook(
   request: Request,
   env: Env,
@@ -107,16 +255,89 @@ async function createKeygenLicense(
 
   console.log(`Keygen: Starting license creation for planName="${planName}", email="${customerEmail}"`);
 
-  // Annual license: expires 1 year from purchase date
-  const expiresAt = new Date();
-  expiresAt.setFullYear(expiresAt.getFullYear() + 1);
-
   const policyId = resolvePolicyId(planName, env);
   console.log(`Keygen: Resolved policyId="${policyId}" (planName="${planName}")`);
   if (!policyId) {
     console.error(`Keygen: No policy for planName "${planName}" — aborting`);
     return;
   }
+
+  // Check if this user has an existing trial license to upgrade
+  const existingTrial = await findExistingTrial(clerkUserId, env);
+
+  if (existingTrial) {
+    console.log(`Keygen: Found existing trial license id=${existingTrial.id} — upgrading`);
+
+    // Upgrade: extend expiry to 1 year, switch policy to paid tier
+    const expiresAt = new Date();
+    expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+
+    const upgradeUrl = `https://api.keygen.sh/v1/accounts/${env.KEYGEN_ACCOUNT_ID}/licenses/${existingTrial.id}`;
+
+    const response = await fetch(upgradeUrl, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${env.KEYGEN_ADMIN_TOKEN}`,
+        'Content-Type': 'application/vnd.api+json',
+        Accept: 'application/vnd.api+json',
+      },
+      body: JSON.stringify({
+        data: {
+          type: 'licenses',
+          id: existingTrial.id,
+          attributes: {
+            // Extend expiry to 1 year from now
+            expiry: expiresAt.toISOString(),
+            metadata: {
+              ...existingTrial.attributes.metadata,
+              planName,
+              customerEmail,
+              stripeSessionId: session.id,
+              amountTotal: session.amount_total ?? null,
+              currency: session.currency ?? null,
+              isTrial: 'false',
+              upgradedAt: new Date().toISOString(),
+            },
+          },
+          relationships: {
+            policy: {
+              data: { type: 'policies', id: policyId },
+            },
+          },
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Keygen trial upgrade failed: ${response.status} ${errorText}`);
+      return;
+    }
+
+    const updatedBody = await response.json() as any;
+    const licenseKey = updatedBody?.data?.attributes?.key || '';
+    const licenseId = updatedBody?.data?.id || '';
+    const expiry = updatedBody?.data?.attributes?.expiry || '';
+
+    console.log(`Keygen: Trial upgraded! id=${licenseId}, key=${licenseKey}, expires=${expiry}`);
+
+    await sendLicenseEmail(env, {
+      to: customerEmail,
+      planName,
+      licenseKey,
+      licenseId,
+      expiry,
+    });
+
+    return;
+  }
+
+  // No existing trial — create new license as normal
+  console.log(`Keygen: No existing trial found — creating new license`);
+
+  // Annual license: expires 1 year from purchase date
+  const expiresAt = new Date();
+  expiresAt.setFullYear(expiresAt.getFullYear() + 1);
 
   const licenseRequestBody = () => ({
     method: 'POST' as const,
@@ -250,13 +471,29 @@ async function sendLicenseEmail(env: Env, params: LicenseEmailParams): Promise<v
       </td>
     </tr>
     <tr>
-      <td style="padding:0 40px">
-        <h2 style="font-size:16px;font-weight:600;color:#1a1a2e;margin:0 0 12px">Activation</h2>
-        <p style="font-size:14px;color:#475569;line-height:1.6;margin:0">
-          Log in to your <a href="https://scanpick.cc" style="color:#2563eb;text-decoration:underline">ScanPick Dashboard</a>,
-          go to <strong>License Settings</strong>, and paste the license key from above to activate.
-        </p>
-      </td>
+        <td style="padding:0 40px">
+          <h2 style="font-size:16px;font-weight:600;color:#1a1a2e;margin:0 0 12px">Activation</h2>
+          <p style="font-size:14px;color:#475569;line-height:1.6;margin:0">
+            Log in to your <a href="https://scanpick.cc" style="color:#2563eb;text-decoration:underline">ScanPick Dashboard</a>,
+            go to <strong>License Settings</strong>, and paste the license key from above to activate.
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:24px 40px 0">
+          <h2 style="font-size:16px;font-weight:600;color:#1a1a2e;margin:0 0 12px">Mobile App</h2>
+          <p style="font-size:14px;color:#475569;line-height:1.6;margin:0">
+            Your warehouse team can use the ScanPick Companion app for barcode scanning.
+            Download it from your device's app store:
+          </p>
+          <ul style="font-size:14px;color:#475569;line-height:1.8;margin:8px 0 0;padding-left:20px">
+            <li><strong>Android:</strong> <a href="https://play.google.com/store/apps/details?id=com.ttdehof.scanpick" style="color:#2563eb;text-decoration:underline">Google Play Store</a></li>
+            <li><strong>iOS:</strong> <a href="https://apps.apple.com/app/scanpick-companion" style="color:#2563eb;text-decoration:underline">Apple App Store</a></li>
+          </ul>
+          <p style="font-size:13px;color:#94a3b8;margin:8px 0 0">
+            After installing, enter your ScanPick server URL and log in with your worker credentials.
+          </p>
+        </td>
     </tr>
     <tr>
       <td style="padding:24px 40px 32px;border-top:1px solid #e2e8f0">
@@ -278,12 +515,18 @@ Plan: ${planName}
 License Key: ${licenseKey}
 Expires: ${expiryFormatted}
 
-Activation:
-  Log in to your ScanPick Dashboard (https://scanpick.cc),
-  go to License Settings, and paste your license key to activate.
-
-Dashboard: https://scanpick.cc
-Support: contact@scanpick.cc`;
+  Activation:
+    Log in to your ScanPick Dashboard (https://scanpick.cc),
+    go to License Settings, and paste your license key to activate.
+  
+  Mobile App:
+    Download ScanPick Companion from your device's app store.
+    Android: https://play.google.com/store/apps/details?id=com.ttdehof.scanpick
+    iOS: https://apps.apple.com/app/scanpick-companion
+  
+  Dashboard: https://scanpick.cc
+  Docs: https://docs.scanpick.cc
+  Support: contact@scanpick.cc`;
 
   try {
     const res = await fetch('https://api.resend.com/emails', {
@@ -477,6 +720,10 @@ export default {
     // potential trailing slashes or query parameters.
     if (url.pathname.startsWith('/api/create-checkout-session') && request.method === 'POST') {
       return handleCreateCheckoutSession(request, env);
+    }
+
+    if (url.pathname.startsWith('/api/create-trial-license') && request.method === 'POST') {
+      return handleCreateTrialLicense(request, env);
     }
 
     if (url.pathname.startsWith('/api/stripe-webhook') && request.method === 'POST') {
